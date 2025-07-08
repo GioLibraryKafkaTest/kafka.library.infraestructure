@@ -45,3 +45,85 @@ services:
       KAFKA_CLUSTERS_0_NAME: local
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
       KAFKA_CLUSTERS_0_ZOOKEEPER: zookeeper:2181
+
+  mongodb_author:
+    image: mongo:7.0
+    container_name: mongodb_author
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port","27017"]
+    ports:
+      - 27017:27017
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: echo "try{rs.status()}catch (err){rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb_author:27017'}]})}" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      retries: 30
+      start_period: 0s
+      start_interval: 1s
+    volumes:
+      - mongodb_author_data:/data/db
+      - mongodb_author_config:/data/configdb
+
+  mongodb_book:
+    image: mongo:7.0
+    container_name: mongodb_book
+    command: ["--replSet", "rs0", "--bind_ip_all", "--port","27017"]
+    ports:
+      - 27018:27017
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: echo "try{rs.status()}catch (err){rs.initiate({_id:'rs0',members:[{_id:0,host:'mongodb_book:27017'}]})}" | mongosh --port 27017 --quiet
+      interval: 5s
+      timeout: 30s
+      retries: 30
+      start_period: 0s
+      start_interval: 1s
+    volumes:
+      - mongodb_book_data:/data/db
+      - mongodb_book_config:/data/configdb
+  
+  mysqldb_author:
+    image: mysql:8.0
+    restart:  always
+    environment:
+      MYSQL_ROOT_PASSWORD: Abc123*
+      MYSQL_DATABASE: authorDB
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_author_data:/var/lib/mysql
+
+  mysqldb_book:
+    image: mysql:8.0
+    restart:  always
+    environment:
+      MYSQL_ROOT_PASSWORD: Abc123*
+      MYSQL_DATABASE: authorDB
+    ports:
+      - "3307:3306"
+    volumes:
+      - mysql_book_data:/var/lib/mysql
+
+volumes:
+  kafka_data:
+    driver: local
+  zookeeper_data:
+    driver: local
+  mongodb_author_data:
+    driver: local
+  mongodb_author_config:
+    driver: local
+  mongodb_book_data:
+    driver: local
+  mongodb_book_config:
+    driver: local
+  mysql_author_data:
+    driver: local
+  mysql_book_data:
+    driver: local
+
+networks:
+  default:
+    name: microservicesNetwork
